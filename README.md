@@ -23,6 +23,8 @@ memory search "SQLite" --project
 memory context --project --query "architecture" --output
 ```
 
+`memory init project` also creates best-effort agent and IDE integration files so MCP-compatible tools can discover PAMH with minimal manual setup.
+
 ## Fonctionnalités MVP
 
 - mémoire Markdown lisible par humain

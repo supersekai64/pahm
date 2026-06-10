@@ -2,6 +2,32 @@
 
 PAMH exposes a Model Context Protocol server over stdio.
 
+## Automatic Project Setup
+
+Running the default project initializer configures best-effort MCP and agent instruction files:
+
+```bash
+memory init project
+```
+
+Generated or updated files:
+
+- `AGENTS.md` for Codex-style and generic agent instructions
+- `CLAUDE.md` for Claude Code project instructions
+- `opencode.json` for OpenCode MCP configuration
+- `.mcp.json` for clients that read project MCP configuration
+- `.cursor/mcp.json` for Cursor MCP configuration
+- `.cursor/rules/pamh.mdc` for Cursor project rules
+- `.github/copilot-instructions.md` for GitHub Copilot project instructions
+
+Existing files are not blindly overwritten. Markdown instruction files receive a managed PAMH block, and JSON config files are merged when they contain valid JSON. Invalid JSON config files are skipped and reported.
+
+Use this only to initialize memory storage without integration files:
+
+```bash
+memory init project --no-integrations
+```
+
 ## Start Server
 
 ```bash

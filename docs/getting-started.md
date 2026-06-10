@@ -35,6 +35,8 @@ memory list
 memory search "query"
 ```
 
+`memory init project` initializes `.ai-memory` and auto-configures supported project-level agent integrations. Use `memory init project --no-integrations` for memory storage only.
+
 ## Development
 
 ```bash

@@ -51,3 +51,8 @@ export {
   type EmbeddingProvider,
 } from './embedding.js'
 export { SemanticIndex, type SemanticSearchResult } from './semantic.js'
+export {
+  configureProjectIntegrations,
+  type ConfigureProjectIntegrationsResult,
+  type IntegrationResult,
+} from './integrations.js'

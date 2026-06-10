@@ -21,7 +21,11 @@ Initialize global memory storage in `~/ai-memory/`.
 memory init project
 ```
 
-Initialize project memory storage in `./.ai-memory/`.
+Initialize project memory storage in `./.ai-memory/` and auto-configure supported agent/IDE integration files.
+
+**Options:**
+
+- `--no-integrations` - Skip agent and IDE integration files
 
 ### Add Memory
 
