@@ -26,22 +26,67 @@ pnpm link:cli
 
 ## Quick Start
 
+### 1. Initialize PAMH in your project
+
 ```bash
-# Initialize memory in current directory
+cd your-project
 memory init
-
-# Add a memory
-memory add -t decision -s project -c "Use SQLite as a local rebuildable index."
-
-# List memories
-memory list
-
-# Search memories
-memory search "SQLite"
-
-# Show memory status
-memory status
 ```
+
+This creates `.ai-memory/` and configures agent integrations automatically.
+
+### 2. Configure your IDE or AI agent
+
+Add PAMH to your MCP-compatible tool (Cursor, VSCode with Copilot, Claude Code, etc.):
+
+```json
+{
+  "mcpServers": {
+    "pamh": {
+      "command": "memory",
+      "args": ["server", "start"]
+    }
+  }
+}
+```
+
+See [docs/mcp.md](docs/mcp.md) for detailed configuration examples.
+
+### 3. Work with your AI agent (automatic mode)
+
+By default, PAMH uses **assisted mode**: your AI agent automatically proposes memories, and you approve or reject them.
+
+**Workflow:**
+
+1. Work normally with your AI agent (Cursor, Copilot, Claude Code, etc.)
+2. The agent proposes memories when it learns something important
+3. Review proposals with `memory ui` or `memory list --status proposed`
+4. Approve with `memory approve <id>` or reject with `memory reject <id>`
+
+**Example:**
+
+```bash
+# See proposed memories
+memory list --status proposed
+
+# Approve a memory
+memory approve mem_abc123
+
+# Or open the UI to review visually
+memory ui --open
+```
+
+### 4. Manual mode (optional)
+
+You can also add memories manually:
+
+```bash
+memory add -t decision -s project -c "Use PostgreSQL for the main database"
+memory list
+memory search "database"
+```
+
+See [docs/capture-modes.md](docs/capture-modes.md) for all capture modes (manual, assisted, auto).
 
 ## How It Works
 
@@ -123,16 +168,6 @@ memory init global
 - [Export / Import](examples/export-import.md)
 - [Shared Memory](examples/shared-memory.md)
 - [MCP Config](examples/mcp-config.json)
-
-## MCP
-
-```bash
-memory server start
-```
-
-See [docs/mcp.md](docs/mcp.md).
-
-PAMH does not automatically record every AI tool action. MCP clients must be configured to use PAMH, and the client or agent must explicitly call PAMH tools such as `add_memory`.
 
 ## Local UI
 

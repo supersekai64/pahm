@@ -1,11 +1,13 @@
 # CLI Workflow Example
 
-This example creates project memory, adds memories, searches them, and compiles context.
+This example demonstrates manual CLI usage for adding memories, searching, and compiling context.
+
+**Note:** For automatic memory capture with your AI agent (Cursor, Copilot, Claude Code, etc.), see [MCP Configuration](../docs/mcp.md) and the [Getting Started guide](../docs/getting-started.md#automatic-memory-capture-default).
 
 ## Initialize
 
 ```bash
-memory init project
+memory init
 ```
 
 ## Add Memories

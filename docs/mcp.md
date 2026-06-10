@@ -7,7 +7,7 @@ PAMH exposes a Model Context Protocol server over stdio.
 Running the default project initializer configures best-effort MCP and agent instruction files:
 
 ```bash
-memory init project
+memory init
 ```
 
 Generated or updated files:
@@ -25,7 +25,7 @@ Existing files are not blindly overwritten. Markdown instruction files receive a
 Use this only to initialize memory storage without integration files:
 
 ```bash
-memory init project --no-integrations
+memory init --no-integrations
 ```
 
 ## Start Server

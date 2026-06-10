@@ -53,6 +53,95 @@ memory init global
 
 This creates `~/ai-memory/` for cross-project preferences and patterns.
 
+## Configure Your IDE or AI Agent
+
+PAMH works best when integrated with your AI-powered development tools via MCP (Model Context Protocol).
+
+### Add PAMH to your MCP configuration
+
+For Cursor, VSCode with Copilot, Claude Code, or other MCP-compatible tools:
+
+```json
+{
+  "mcpServers": {
+    "pamh": {
+      "command": "memory",
+      "args": ["server", "start"]
+    }
+  }
+}
+```
+
+See [MCP Configuration](mcp.md) for detailed examples for each tool.
+
+## Automatic Memory Capture (Default)
+
+By default, PAMH uses **assisted mode**: your AI agent automatically proposes memories when it learns something important, and you review and approve them.
+
+### Workflow
+
+1. **Work normally** with your AI agent (Cursor, Copilot, Claude Code, etc.)
+2. **Agent proposes memories** automatically when it encounters important information
+3. **Review proposals**:
+
+   ```bash
+   # List proposed memories
+   memory list --status proposed
+
+   # Or open the UI for visual review
+   memory ui --open
+   ```
+
+4. **Approve or reject**:
+
+   ```bash
+   # Approve a memory
+   memory approve mem_abc123
+
+   # Reject a memory
+   memory reject mem_xyz789
+   ```
+
+### Example
+
+```bash
+# After working with your AI agent, check for proposals
+memory list --status proposed
+# mem_abc123 | decision | project | proposed | Use PostgreSQL for main database
+# mem_def456 | knowledge | project | proposed | API rate limit is 1000 req/min
+
+# Approve the ones you want to keep
+memory approve mem_abc123
+memory approve mem_def456
+
+# They're now active and searchable
+memory list
+memory search "PostgreSQL"
+```
+
+See [Capture Modes](capture-modes.md) for all available modes (manual, assisted, auto).
+
+## Manual Memory Capture (Optional)
+
+You can also add memories manually:
+
+```bash
+# Add a memory
+memory add -t decision -s project -c "Use PostgreSQL for the main database"
+
+# List memories
+memory list
+
+# Search memories
+memory search "database"
+
+# Show memory status
+memory status
+
+# Compile context
+memory context --query "architecture" --output
+```
+
 ## How Memory Discovery Works
 
 PAMH searches for `.ai-memory/` by walking up the directory tree, similar to how `.git` works.
@@ -80,25 +169,6 @@ cd ~/projects/my-app/backend
 memory init
 # → Creates ~/projects/my-app/backend/.ai-memory/
 # → This project now has its own isolated memory
-```
-
-## Basic Usage
-
-```bash
-# Add a memory
-memory add -t decision -s project -c "Use PostgreSQL for the main database"
-
-# List memories
-memory list
-
-# Search memories
-memory search "database"
-
-# Show memory status
-memory status
-
-# Compile context
-memory context --query "architecture" --output
 ```
 
 ## Development
