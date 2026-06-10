@@ -101,5 +101,3 @@ Search Results
       =
 Compiled Context
 ```
-
-Note: `linked-projects.yaml` is deprecated. Use the automatic directory traversal instead by initializing memory in a parent directory.

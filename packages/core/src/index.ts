@@ -42,13 +42,6 @@ export {
   type ImportResult,
 } from './import.js'
 export {
-  loadLinkedProjects,
-  saveLinkedProjects,
-  addLinkedProject,
-  removeLinkedProject,
-  type LinkedProjectsConfig,
-} from './linked-projects.js'
-export {
   compileContext,
   writeCompiledContext,
   type CompileContextOptions,

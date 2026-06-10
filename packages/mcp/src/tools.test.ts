@@ -8,8 +8,6 @@ import {
   compileMemoryContext,
   editMemory,
   getMemory,
-  linkProject,
-  listProjects,
   removeMemory,
   searchMemory,
   type McpToolContext,
@@ -69,15 +67,6 @@ describe('MCP tools', () => {
 
     const afterDelete = await getMemory({ id: created.metadata.id, scope: 'project' }, context)
     expect(afterDelete?.metadata.status).toBe('deleted')
-  })
-
-  it('should list current and linked projects', async () => {
-    const linkedProject = join(tempDir, 'linked-project')
-    await linkProject(linkedProject, context)
-
-    const projects = await listProjects({}, context)
-    expect(projects).toContain(projectDir)
-    expect(projects).toContain(linkedProject)
   })
 
   it('should compile context', async () => {

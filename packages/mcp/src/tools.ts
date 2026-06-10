@@ -1,6 +1,5 @@
 import {
   MemoryIndex,
-  addLinkedProject,
   compileContext,
   createMemory,
   deleteMemory,
@@ -8,7 +7,6 @@ import {
   getProjectMemoryPath,
   indexAllMemories,
   loadAutoCaptureConfig,
-  loadLinkedProjects,
   readMemory,
   updateMemory,
   assertMemoryType,
@@ -133,11 +131,8 @@ export async function removeMemory(input: DeleteMemoryInput, context: McpToolCon
 }
 
 export async function listProjects(input: ListProjectsInput, context: McpToolContext) {
-  const projectBasePath = resolveMemoryPath(context, 'project')
-  const linked = await loadLinkedProjects(projectBasePath)
   const projects = input.includeCurrent === false ? [] : [context.cwd]
-
-  return [...projects, ...linked.projects]
+  return projects
 }
 
 export async function compileMemoryContext(input: CompileContextInput, context: McpToolContext) {
@@ -149,9 +144,4 @@ export async function compileMemoryContext(input: CompileContextInput, context: 
       maxTokens: input.maxTokens,
     }
   )
-}
-
-export async function linkProject(projectPath: string, context: McpToolContext) {
-  const projectBasePath = resolveMemoryPath(context, 'project')
-  await addLinkedProject(projectBasePath, projectPath)
 }

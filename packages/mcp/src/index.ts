@@ -4,7 +4,6 @@ export {
   compileMemoryContext,
   editMemory,
   getMemory,
-  linkProject,
   listProjects,
   removeMemory,
   resolveMemoryPath,
