@@ -3,6 +3,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { extname, join, normalize, resolve, sep } from 'node:path'
 import {
   MemoryIndex,
+  approveMemory,
   archiveMemory,
   createMemory,
   deleteMemory,
@@ -11,6 +12,7 @@ import {
   indexAllMemories,
   listMemories,
   readMemory,
+  rejectMemory,
   restoreMemory,
   updateMemory,
   type CreateMemoryInput,
@@ -136,7 +138,9 @@ async function handleApiRequest(
     return
   }
 
-  const memoryMatch = url.pathname.match(/^\/api\/memories\/([^/]+)(?:\/(archive|restore))?$/)
+  const memoryMatch = url.pathname.match(
+    /^\/api\/memories\/([^/]+)(?:\/(archive|restore|approve|reject))?$/
+  )
   if (memoryMatch) {
     const id = decodeURIComponent(memoryMatch[1])
     const action = memoryMatch[2]
@@ -176,6 +180,20 @@ async function handleApiRequest(
       const restored = await restoreMemory(basePath, id)
       if (!restored) return sendJson(response, 404, notFound(id))
       sendJson(response, 200, { restored: true })
+      return
+    }
+
+    if (method === 'POST' && action === 'approve') {
+      const approved = await approveMemory(basePath, id)
+      if (!approved) return sendJson(response, 404, notFound(id))
+      sendJson(response, 200, { approved: true })
+      return
+    }
+
+    if (method === 'POST' && action === 'reject') {
+      const rejected = await rejectMemory(basePath, id)
+      if (!rejected) return sendJson(response, 404, notFound(id))
+      sendJson(response, 200, { rejected: true })
       return
     }
   }

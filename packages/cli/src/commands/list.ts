@@ -9,6 +9,7 @@ export function registerListCommand(program: Command) {
     .option('--type <type>', 'Filter by type')
     .option('--scope <scope>', 'Filter by scope')
     .option('--tag <tag>', 'Filter by tag')
+    .option('--status <status>', 'Filter by status')
     .action(async (options) => {
       const basePath = options.project ? getProjectMemoryPath(process.cwd()) : getGlobalMemoryPath()
 
@@ -22,6 +23,9 @@ export function registerListCommand(program: Command) {
       }
       if (options.tag) {
         memories = memories.filter((m) => m.metadata.tags.includes(options.tag))
+      }
+      if (options.status) {
+        memories = memories.filter((m) => m.metadata.status === options.status)
       }
 
       if (memories.length === 0) {

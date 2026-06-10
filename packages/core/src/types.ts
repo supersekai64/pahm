@@ -32,7 +32,7 @@ export function isMemoryScope(value: unknown): value is MemoryScope {
   return typeof value === 'string' && MEMORY_SCOPES.includes(value as MemoryScope)
 }
 
-export const MEMORY_STATUSES = ['active', 'deleted', 'archived'] as const
+export const MEMORY_STATUSES = ['active', 'deleted', 'archived', 'proposed'] as const
 
 export type MemoryStatus = (typeof MEMORY_STATUSES)[number]
 
@@ -83,6 +83,7 @@ export interface CreateMemoryInput {
   content: string
   tags?: string[]
   source?: string
+  status?: MemoryStatus
 }
 
 export interface UpdateMemoryInput {

@@ -14,6 +14,9 @@ import { registerSearchCommand } from './commands/search.js'
 import { registerDoctorCommand } from './commands/doctor.js'
 import { registerRedactCommand } from './commands/redact.js'
 import { registerRestoreCommand } from './commands/restore.js'
+import { registerApproveCommand } from './commands/approve.js'
+import { registerRejectCommand } from './commands/reject.js'
+import { registerCaptureCommand } from './commands/capture.js'
 import { registerAuditCommand } from './commands/audit.js'
 import { registerExportCommand } from './commands/export-cmd.js'
 import { registerImportCommand } from './commands/import-cmd.js'
@@ -38,6 +41,9 @@ registerSearchCommand(program)
 registerDoctorCommand(program)
 registerRedactCommand(program)
 registerRestoreCommand(program)
+registerApproveCommand(program)
+registerRejectCommand(program)
+registerCaptureCommand(program)
 registerAuditCommand(program)
 registerExportCommand(program)
 registerImportCommand(program)

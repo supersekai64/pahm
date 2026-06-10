@@ -28,6 +28,7 @@ interface Stats {
   active: number
   deleted: number
   archived: number
+  proposed: number
   byType: Record<string, number>
   byScope: Record<string, number>
   tags: Record<string, number>
@@ -57,7 +58,7 @@ const memoryTypes = [
   'pattern',
 ]
 const memoryScopes = ['global', 'project', 'client', 'stack', 'temporary', 'archived']
-const statuses = ['', 'active', 'archived', 'deleted']
+const statuses = ['', 'active', 'archived', 'deleted', 'proposed']
 
 const state: State = {
   store: 'project',
@@ -149,7 +150,7 @@ async function updateFromForm(form: HTMLFormElement): Promise<void> {
 }
 
 async function runAction(
-  action: 'archive' | 'restore' | 'delete' | 'physical-delete'
+  action: 'archive' | 'restore' | 'delete' | 'physical-delete' | 'approve' | 'reject'
 ): Promise<void> {
   if (!state.selected) return
 
@@ -164,6 +165,10 @@ async function runAction(
   } else {
     await api(`/api/memories/${id}/${action}?store=${state.store}`, { method: 'POST' })
     state.message = `${capitalize(action)}d ${id}`
+    if (action === 'approve' || action === 'reject') {
+      state.selected = null
+      state.selectedId = null
+    }
   }
 
   await refresh()
@@ -189,6 +194,7 @@ function render(): void {
       <section class="stats">
         ${renderStat('Total', state.stats?.total)}
         ${renderStat('Active', state.stats?.active)}
+        ${renderStat('Proposed', state.stats?.proposed)}
         ${renderStat('Archived', state.stats?.archived)}
         ${renderStat('Deleted', state.stats?.deleted)}
       </section>
@@ -300,25 +306,37 @@ function renderCreateForm(): string {
 }
 
 function renderEditor(memory: Memory): string {
+  const isProposed = memory.metadata.status === 'proposed'
+  const actionsHtml = isProposed
+    ? `
+        <div class="actions">
+          <button class="primary" type="button" data-action="approve">Approve</button>
+          <button class="danger" type="button" data-action="reject">Reject</button>
+        </div>
+      `
+    : `
+        <div class="actions">
+          <button class="primary" type="submit">Save</button>
+          <button type="button" data-action="archive">Archive</button>
+          <button type="button" data-action="restore">Restore</button>
+          <button type="button" data-action="delete">Delete</button>
+          <button class="danger" type="button" data-action="physical-delete">Physical delete</button>
+        </div>
+      `
+
   return `
     <div class="detail-header">
       <div>
         <p class="eyebrow">${escapeHtml(memory.metadata.id)}</p>
-        <h2>Edit memory</h2>
+        <h2>${isProposed ? 'Review proposed memory' : 'Edit memory'}</h2>
       </div>
       <button id="new-memory">New</button>
     </div>
     <form id="edit-form" class="memory-form">
       ${renderTypeScopeFields(memory.metadata.type, memory.metadata.scope)}
       <input name="tags" value="${escapeAttribute(memory.metadata.tags.join(', '))}" />
-      <textarea name="content" required>${escapeHtml(memory.content)}</textarea>
-      <div class="actions">
-        <button class="primary" type="submit">Save</button>
-        <button type="button" data-action="archive">Archive</button>
-        <button type="button" data-action="restore">Restore</button>
-        <button type="button" data-action="delete">Delete</button>
-        <button class="danger" type="button" data-action="physical-delete">Physical delete</button>
-      </div>
+      <textarea name="content" required ${isProposed ? 'readonly' : ''}>${escapeHtml(memory.content)}</textarea>
+      ${actionsHtml}
     </form>
   `
 }

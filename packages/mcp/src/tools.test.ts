@@ -41,6 +41,7 @@ describe('MCP tools', () => {
         type: 'decision',
         scope: 'project',
         tags: ['database'],
+        status: 'active',
       },
       context
     )
@@ -85,6 +86,7 @@ describe('MCP tools', () => {
         content: 'Project architecture uses TypeScript packages',
         type: 'knowledge',
         scope: 'project',
+        status: 'active',
       },
       context
     )

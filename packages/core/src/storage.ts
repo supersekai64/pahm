@@ -7,6 +7,7 @@ import { generateId } from './id.js'
 import { MemoryIndex, type SearchResult } from './indexer.js'
 import {
   assertMemoryScope,
+  assertMemoryStatus,
   assertMemoryType,
   type CreateMemoryInput,
   type Memory,
@@ -77,6 +78,7 @@ export async function initProjectMemory(projectPath: string): Promise<string> {
 export async function createMemory(basePath: string, input: CreateMemoryInput): Promise<Memory> {
   const type = assertMemoryType(input.type)
   const scope = assertMemoryScope(input.scope)
+  const status = input.status ? assertMemoryStatus(input.status) : 'active'
   const id = generateId()
   const now = new Date().toISOString()
 
@@ -85,7 +87,7 @@ export async function createMemory(basePath: string, input: CreateMemoryInput): 
       id,
       type,
       scope,
-      status: 'active',
+      status,
       created_at: now,
       updated_at: now,
       tags: input.tags ?? [],

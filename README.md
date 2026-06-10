@@ -44,6 +44,7 @@ memory context --project --query "architecture" --output
 - [CLI](docs/cli.md)
 - [MCP](docs/mcp.md)
 - [UI](docs/ui.md)
+- [Capture Modes](docs/capture-modes.md)
 - [Security](docs/security.md)
 - [Concepts](docs/concepts.md)
 - [FAQ](docs/faq.md)

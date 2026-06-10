@@ -56,9 +56,17 @@ Yes. The MCP server exposes tools for adding, editing, deleting, searching, and 
 
 ## Does PAMH automatically record OpenCode or other AI sessions?
 
-No. PAMH does not observe tools in the background. OpenCode, an IDE, or another agent must be configured as an MCP client and must explicitly call PAMH tools such as `add_memory`. You can always add memories manually with `memory add` or through `memory ui`.
+PAMH supports three capture modes:
 
-Example:
+- **manual** - You explicitly add memories
+- **assisted** (default) - Agent proposes memories, you approve them
+- **auto** - Agent creates memories directly based on rules
+
+In assisted mode (the default), when an agent calls `add_memory`, the memory is created with `status: proposed`. You review and approve it with `memory approve <id>` or via the UI.
+
+See [docs/capture-modes.md](capture-modes.md) for configuration details.
+
+Example manual capture:
 
 ```bash
 memory add --project -t session -s project --tags "opencode" -c "Implemented the initial React page with Tailwind and shadcn."

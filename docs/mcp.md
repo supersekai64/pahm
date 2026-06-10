@@ -48,13 +48,21 @@ The server uses the current working directory as the project root. Project memor
 
 ## Capture Model
 
-PAMH is not a background recorder. It does not watch OpenCode, editors, terminals, or LLM conversations automatically.
+PAMH supports three capture modes configured in `.ai-memory/auto-capture.yaml`:
 
-Memory is created only when one of these actions happens:
+- **manual** - Memories are created only when explicitly requested
+- **assisted** (default) - Agent proposes memories, user approves
+- **auto** - Agent creates memories directly based on rules
+
+In assisted mode, when an agent calls `add_memory`, the memory is created with `status: proposed` and requires user approval via `memory approve <id>` or the UI.
+
+See [docs/capture-modes.md](capture-modes.md) for detailed configuration.
+
+Memory is created when one of these actions happens:
 
 - a user runs a CLI command such as `memory add`
 - a user creates a memory in the local UI
-- an MCP client explicitly calls `add_memory`
+- an MCP client calls `add_memory` (status depends on capture mode)
 
 This is intentional for control and transparency. If an MCP client completes useful work, instruct it to save the relevant decision, task, mistake, or project state through PAMH.
 

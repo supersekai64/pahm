@@ -117,10 +117,18 @@ This writes `compiled-context.md` to project memory.
 
 PAMH uses explicit capture by default. It does not scrape editor sessions, terminal output, or LLM conversations.
 
+PAMH supports three capture modes:
+
+- **manual** - You explicitly call `memory add`
+- **assisted** (default) - Agent proposes memories via MCP, you approve them
+- **auto** - Agent creates memories directly based on configured rules
+
 Use one of these capture paths:
 
 - CLI: `memory add`
 - UI: `memory ui`
 - MCP: an agent calls `add_memory`
+
+The capture mode is configured in `.ai-memory/auto-capture.yaml`. See [docs/capture-modes.md](capture-modes.md) for details.
 
 Explicit capture keeps memory auditable and prevents accidental storage of private or transient information.

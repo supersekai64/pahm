@@ -7,10 +7,12 @@ import {
   getGlobalMemoryPath,
   getProjectMemoryPath,
   indexAllMemories,
+  loadAutoCaptureConfig,
   loadLinkedProjects,
   readMemory,
   updateMemory,
   assertMemoryType,
+  type MemoryStatus,
 } from '@pamh/core'
 
 export interface McpToolContext {
@@ -37,6 +39,7 @@ export interface AddMemoryInput {
   type: string
   scope?: 'global' | 'project'
   tags?: string[]
+  status?: MemoryStatus
 }
 
 export interface EditMemoryInput {
@@ -97,12 +100,20 @@ export async function addMemory(input: AddMemoryInput, context: McpToolContext) 
   const scope = input.scope ?? 'project'
   const basePath = resolveMemoryPath(context, scope)
 
+  const config = await loadAutoCaptureConfig(basePath)
+  let status: MemoryStatus = input.status ?? 'active'
+
+  if (!input.status && config.mode === 'assisted') {
+    status = 'proposed'
+  }
+
   return createMemory(basePath, {
     content: input.content,
     type: assertMemoryType(input.type),
     scope,
     tags: input.tags ?? [],
     source: 'mcp',
+    status,
   })
 }
 

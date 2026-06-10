@@ -24,6 +24,15 @@ export { MemoryIndex, type SearchOptions, type SearchResult, type IndexStats } f
 export { loadMemoryIgnore, getDefaultIgnorePatterns, type MemoryIgnore } from './memoryignore.js'
 export { redactContent, getRedactionPatterns, type RedactionResult } from './redaction.js'
 export { restoreMemory } from './restore.js'
+export { approveMemory, rejectMemory } from './approve.js'
+export {
+  loadAutoCaptureConfig,
+  saveAutoCaptureConfig,
+  initAutoCaptureConfig,
+  type AutoCaptureMode,
+  type AutoCaptureConfig,
+  type AutoCaptureRule,
+} from './auto-capture.js'
 export { exportMemories, type ExportFormat, type ExportOptions } from './export.js'
 export {
   importMemories,
