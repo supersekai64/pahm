@@ -17,6 +17,14 @@ pnpm install
 pnpm build
 ```
 
+## Link The CLI
+
+```bash
+pnpm link:cli
+```
+
+This links the `memory` command globally from `packages/cli`. Use this root script instead of `pnpm --filter @pamh/cli link --global`, because `pnpm link` does not support filtered workspace execution consistently across PNPM versions and also requires a configured PNPM global bin directory.
+
 ## Usage
 
 ```bash

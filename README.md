@@ -9,7 +9,10 @@ PAMH permet de conserver une mémoire contrôlable par l'utilisateur, utilisable
 ```bash
 pnpm install
 pnpm build
+pnpm link:cli
 ```
+
+`pnpm link:cli` exposes the `memory` command globally from `packages/cli`.
 
 ## Usage Rapide
 
