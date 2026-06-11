@@ -177,45 +177,93 @@ async function runAction(
 function render(): void {
   app.innerHTML = `
     <section class="shell">
-      <header class="hero">
-        <div>
-          <p class="eyebrow">Portable AI Memory Hub</p>
-          <h1>Local Memory Console</h1>
-          <p class="lede">A localhost-only interface over your Markdown memory source of truth.</p>
-        </div>
-        <div class="store-switch" role="group" aria-label="Memory store">
-          ${renderStoreButton('project')}
-          ${renderStoreButton('global')}
-        </div>
-      </header>
-
-      ${state.message ? `<div class="notice">${escapeHtml(state.message)}</div>` : ''}
-
-      <section class="stats">
-        ${renderStat('Total', state.stats?.total)}
-        ${renderStat('Active', state.stats?.active)}
-        ${renderStat('Proposed', state.stats?.proposed)}
-        ${renderStat('Archived', state.stats?.archived)}
-        ${renderStat('Deleted', state.stats?.deleted)}
-      </section>
-
-      <section class="workspace">
-        <aside class="panel list-panel">
-          <div class="toolbar">
-            <input id="query" placeholder="Search memories" value="${escapeAttribute(state.query)}" />
-            <select id="status">
-              ${statuses.map((status) => `<option value="${status}" ${state.status === status ? 'selected' : ''}>${status || 'any status'}</option>`).join('')}
-            </select>
+      <aside class="sidebar" aria-label="PAMH navigation">
+        <div class="brand">
+          <div class="brand-mark">M</div>
+          <div>
+            <p class="brand-kicker">PAMH</p>
+            <h1>Memory Hub</h1>
           </div>
-          <div class="memory-list">
-            ${state.memories.map(renderMemoryRow).join('') || '<p class="empty">No memories found.</p>'}
-          </div>
-        </aside>
+        </div>
 
-        <section class="panel detail-panel">
-          ${state.selected ? renderEditor(state.selected) : renderCreateForm()}
+        <div class="store-card">
+          <span class="label">Memory store</span>
+          <div class="store-switch" role="group" aria-label="Memory store">
+            ${renderStoreButton('project')}
+            ${renderStoreButton('global')}
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <span class="label">Status</span>
+          <div class="metric-list">
+            ${renderStat('Active', state.stats?.active)}
+            ${renderStat('Proposed', state.stats?.proposed)}
+            ${renderStat('Archived', state.stats?.archived)}
+            ${renderStat('Deleted', state.stats?.deleted)}
+          </div>
+        </div>
+
+        <div class="sidebar-section muted-card">
+          <span class="label">Source of truth</span>
+          <p>Local Markdown memories, indexed and exposed through CLI, MCP, API, and UI.</p>
+        </div>
+      </aside>
+
+      <main class="console">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Local console</p>
+            <h2>Review, search, and curate memories.</h2>
+          </div>
+          <button class="primary" type="button" data-new-memory>New memory</button>
+        </header>
+
+        ${state.message ? `<div class="notice">${escapeHtml(state.message)}</div>` : ''}
+
+        <section class="overview-grid" aria-label="Memory overview">
+          <article class="overview-card primary-card">
+            <span class="label">Total memories</span>
+            <strong>${state.stats?.total ?? '-'}</strong>
+            <p>Currently indexed in the ${escapeHtml(state.store)} store.</p>
+          </article>
+          ${renderBreakdown('Types', state.stats?.byType)}
+          ${renderBreakdown('Scopes', state.stats?.byScope)}
         </section>
-      </section>
+
+        <section class="workspace">
+          <section class="panel list-panel" aria-label="Memories">
+            <div class="panel-header">
+              <div>
+                <span class="label">Memory index</span>
+                <strong>${state.memories.length} results</strong>
+              </div>
+              <span class="sync-dot">Live</span>
+            </div>
+
+            <div class="toolbar">
+              <label class="search-field">
+                <span>Search</span>
+                <input id="query" placeholder="Search facts, decisions, rules..." value="${escapeAttribute(state.query)}" />
+              </label>
+              <label>
+                <span>Status</span>
+                <select id="status">
+                  ${statuses.map((status) => `<option value="${status}" ${state.status === status ? 'selected' : ''}>${status || 'Any status'}</option>`).join('')}
+                </select>
+              </label>
+            </div>
+
+            <div class="memory-list">
+              ${state.memories.map(renderMemoryRow).join('') || '<p class="empty">No memories match this view.</p>'}
+            </div>
+          </section>
+
+          <section class="panel detail-panel" aria-label="Selected memory">
+            ${state.selected ? renderEditor(state.selected) : renderCreateForm()}
+          </section>
+        </section>
+      </main>
     </section>
   `
 
@@ -246,10 +294,12 @@ function bindEvents(): void {
     button.addEventListener('click', () => void selectMemory(button.dataset.memoryId ?? ''))
   })
 
-  document.querySelector<HTMLButtonElement>('#new-memory')?.addEventListener('click', () => {
-    state.selected = null
-    state.selectedId = null
-    render()
+  document.querySelectorAll<HTMLButtonElement>('[data-new-memory]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.selected = null
+      state.selectedId = null
+      render()
+    })
   })
 
   document.querySelector<HTMLFormElement>('#create-form')?.addEventListener('submit', (event) => {
@@ -268,11 +318,31 @@ function bindEvents(): void {
 }
 
 function renderStoreButton(store: Store): string {
-  return `<button data-store="${store}" class="${state.store === store ? 'active' : ''}">${store}</button>`
+  return `<button data-store="${store}" class="${state.store === store ? 'active' : ''}">${capitalize(store)}</button>`
 }
 
 function renderStat(label: string, value?: number): string {
-  return `<article><span>${label}</span><strong>${value ?? '-'}</strong></article>`
+  return `
+    <article class="metric">
+      <span>${label}</span>
+      <strong>${value ?? '-'}</strong>
+    </article>
+  `
+}
+
+function renderBreakdown(label: string, values?: Record<string, number>): string {
+  const entries = Object.entries(values ?? {})
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+
+  return `
+    <article class="overview-card">
+      <span class="label">${label}</span>
+      <div class="breakdown">
+        ${entries.map(([key, value]) => `<span><em>${escapeHtml(key)}</em><strong>${value}</strong></span>`).join('') || '<p class="empty compact">No data yet.</p>'}
+      </div>
+    </article>
+  `
 }
 
 function renderMemoryRow(memory: Memory | SearchResult): string {
@@ -280,14 +350,19 @@ function renderMemoryRow(memory: Memory | SearchResult): string {
   const content = memory.content
   const selected = metadata.id === state.selectedId ? 'selected' : ''
   const proposed = metadata.status === 'proposed' ? 'proposed' : ''
-  const statusBadge =
-    metadata.status === 'proposed' ? '<span class="badge proposed">PROPOSED</span>' : ''
 
   return `
     <button class="memory-row ${selected} ${proposed}" data-memory-id="${metadata.id}">
-      <span class="row-title">${escapeHtml(metadata.type)} / ${escapeHtml(metadata.scope)} ${statusBadge}</span>
-      <span class="row-content">${escapeHtml(content.slice(0, 110))}</span>
-      <span class="row-meta">${escapeHtml(metadata.status)} · ${escapeHtml(metadata.tags.join(', ') || 'no tags')}</span>
+      <span class="row-head">
+        <span class="row-title">${escapeHtml(metadata.type)}</span>
+        <span class="status-pill ${escapeAttribute(metadata.status)}">${escapeHtml(metadata.status)}</span>
+      </span>
+      <span class="row-content">${escapeHtml(content.slice(0, 150))}${content.length > 150 ? '...' : ''}</span>
+      <span class="row-meta">
+        <span>${escapeHtml(metadata.scope)}</span>
+        <span>${formatDate(metadata.updated_at)}</span>
+        <span>${escapeHtml(metadata.tags.slice(0, 3).join(', ') || 'no tags')}</span>
+      </span>
     </button>
   `
 }
@@ -302,9 +377,15 @@ function renderCreateForm(): string {
     </div>
     <form id="create-form" class="memory-form">
       ${renderTypeScopeFields('knowledge', state.store)}
-      <input name="tags" placeholder="tags, comma separated" />
-      <textarea name="content" placeholder="Write a memory..." required></textarea>
-      <button class="primary" type="submit">Create memory</button>
+      <label>
+        <span>Tags</span>
+        <input name="tags" placeholder="architecture, decision, api" />
+      </label>
+      <label>
+        <span>Memory</span>
+        <textarea name="content" placeholder="Write a concise, durable memory..." required></textarea>
+      </label>
+      <button class="primary wide" type="submit">Create memory</button>
     </form>
   `
 }
@@ -334,12 +415,23 @@ function renderEditor(memory: Memory): string {
         <p class="eyebrow">${escapeHtml(memory.metadata.id)}</p>
         <h2>${isProposed ? 'Review proposed memory' : 'Edit memory'}</h2>
       </div>
-      <button id="new-memory">New</button>
+      <button type="button" data-new-memory>New</button>
+    </div>
+    <div class="memory-meta-card">
+      <span><strong>Status</strong>${escapeHtml(memory.metadata.status)}</span>
+      <span><strong>Scope</strong>${escapeHtml(memory.metadata.scope)}</span>
+      <span><strong>Updated</strong>${formatDate(memory.metadata.updated_at)}</span>
     </div>
     <form id="edit-form" class="memory-form">
       ${renderTypeScopeFields(memory.metadata.type, memory.metadata.scope)}
-      <input name="tags" value="${escapeAttribute(memory.metadata.tags.join(', '))}" />
-      <textarea name="content" required ${isProposed ? 'readonly' : ''}>${escapeHtml(memory.content)}</textarea>
+      <label>
+        <span>Tags</span>
+        <input name="tags" value="${escapeAttribute(memory.metadata.tags.join(', '))}" />
+      </label>
+      <label>
+        <span>Memory</span>
+        <textarea name="content" required ${isProposed ? 'readonly' : ''}>${escapeHtml(memory.content)}</textarea>
+      </label>
       ${actionsHtml}
     </form>
   `
@@ -348,8 +440,14 @@ function renderEditor(memory: Memory): string {
 function renderTypeScopeFields(type: string, scope: string): string {
   return `
     <div class="field-grid">
-      <select name="type">${memoryTypes.map((item) => option(item, type)).join('')}</select>
-      <select name="scope">${memoryScopes.map((item) => option(item, scope)).join('')}</select>
+      <label>
+        <span>Type</span>
+        <select name="type">${memoryTypes.map((item) => option(item, type)).join('')}</select>
+      </label>
+      <label>
+        <span>Scope</span>
+        <select name="scope">${memoryScopes.map((item) => option(item, scope)).join('')}</select>
+      </label>
     </div>
   `
 }
@@ -377,6 +475,12 @@ function parseTags(value: string): string[] {
 
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1)
+}
+
+function formatDate(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'unknown'
+  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date)
 }
 
 function escapeHtml(value: string): string {

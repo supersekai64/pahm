@@ -1,6 +1,6 @@
 {
   "name": "pamh-api",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "PAMH API - Local HTTP API for PAMH clients",
   "type": "module",
   "license": "MIT",

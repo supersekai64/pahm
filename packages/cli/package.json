@@ -1,6 +1,6 @@
 {
   "name": "pamh-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "PAMH CLI - Command line interface for PAMH",
   "type": "module",
   "license": "MIT",
