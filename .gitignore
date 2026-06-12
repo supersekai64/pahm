@@ -15,6 +15,7 @@ coverage/
 .cursor
 .github
 .vscode
+.mcp.json
 AGENTS.md
 CLAUDE.md
 opencode.json

@@ -129,7 +129,13 @@ export async function startLocalApiServer(
   const port = options.port ?? DEFAULT_PORT
   const server = createLocalApiServer(options)
 
-  await new Promise<void>((resolveServer) => server.listen(port, host, resolveServer))
+  await new Promise<void>((resolveServer, rejectServer) => {
+    server.once('error', rejectServer)
+    server.listen(port, host, () => {
+      server.removeListener('error', rejectServer)
+      resolveServer()
+    })
+  })
 
   return {
     server,
@@ -164,6 +170,12 @@ async function handleApiRequest(
 ): Promise<void> {
   if (method === 'GET' && url.pathname === '/api/health') {
     sendJson(response, 200, { ok: true })
+    return
+  }
+
+  if (method === 'POST' && url.pathname === '/api/shutdown') {
+    sendJson(response, 200, { ok: true })
+    setImmediate(() => process.exit(0))
     return
   }
 
