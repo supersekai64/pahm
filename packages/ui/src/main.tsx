@@ -3,19 +3,15 @@ import './styles.css'
 import {
   Archive,
   Ban,
-  BrainCircuit,
   Check,
   Circle,
-  Database,
   FileText,
-  GitBranch,
   ListFilter,
   Merge,
   Plus,
   RotateCcw,
   Save,
   Search,
-  Shield,
   Sparkles,
   Trash2,
   X,
@@ -26,6 +22,8 @@ import { createRoot } from 'react-dom/client'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
+import { ConsoleHeader } from '@/components/console-header'
+import { Sidebar } from '@/components/sidebar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -37,9 +35,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { getStatusTone } from '@/lib/status-tone'
 import { cn } from '@/lib/utils'
 
 type Store = 'project'
@@ -267,26 +265,6 @@ const memoryTypes = [
 const memoryTypePriority = new Map(memoryTypes.map((type, index) => [type, index]))
 const statuses = ['active', 'all', 'proposed', 'archived', 'deleted', 'noise']
 
-const navItems: Array<{ icon: LucideIcon; label: string; view: WorkspaceView }> = [
-  { icon: BrainCircuit, label: 'Concepts map', view: 'map' },
-  { icon: GitBranch, label: 'Knowledge graph', view: 'knowledge' },
-  { icon: ListFilter, label: 'Evidence', view: 'evidence' },
-  { icon: FileText, label: 'LLM context', view: 'context' },
-  { icon: Shield, label: 'Governance', view: 'governance' },
-]
-
-const navHints: Record<WorkspaceView, string> = {
-  map: 'Force-directed map of the strongest concepts (tags + keywords) extracted from the current LLM context. Click a node to focus its evidence.',
-  knowledge:
-    'Typed graph of entities and relations inferred across memories (decisions, components, people, etc.) with evidence links.',
-  evidence:
-    'Filterable list of individual memories that back the current view. This is where you read, edit, approve, archive or delete records.',
-  context:
-    'Exact text the LLM would receive as project memory right now, with token estimate and the contributing sources.',
-  governance:
-    'Hygiene controls: noise visibility, distillation proposals, and assisted recommendations to keep the memory store clean.',
-}
-
 const statusHints: Record<string, string> = {
   Active: 'Approved, durable memories that are loaded into the LLM context.',
   Proposed:
@@ -369,7 +347,7 @@ function Hint({
 }
 
 function App() {
-  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>('map')
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>(() => getInitialWorkspaceView())
   const [mapLayout, setMapLayout] = useState<MapLayout>('3d')
   const [conceptDepth, setConceptDepth] = useState<ConceptDepth>('top')
   const [query, setQuery] = useState('')
@@ -494,6 +472,20 @@ function App() {
     void selectMemory(selectedId)
   }, [selectMemory, selectedId])
 
+  useEffect(() => {
+    const onLocationChange = () => {
+      const nextView = getInitialWorkspaceView()
+      setWorkspaceView(nextView)
+    }
+
+    window.addEventListener('hashchange', onLocationChange)
+    window.addEventListener('popstate', onLocationChange)
+    return () => {
+      window.removeEventListener('hashchange', onLocationChange)
+      window.removeEventListener('popstate', onLocationChange)
+    }
+  }, [])
+
   const clearFocus = () => {
     setFocusedConcept('')
     setQuery('')
@@ -515,6 +507,9 @@ function App() {
       clearConceptFocus()
     }
     setWorkspaceView(view)
+    if (window.location.hash !== `#/${view}`) {
+      window.history.pushState(null, '', `#/${view}`)
+    }
   }
 
   const focusConcept = (concept: string) => {
@@ -701,30 +696,14 @@ function App() {
           />
 
           <main className="min-w-0 rounded-md bg-card p-4 shadow-sm">
-            <header className="mb-4 flex items-start justify-between gap-4 max-md:grid">
-              <div>
-                <h1 className="mt-1 text-3xl font-semibold tracking-tight text-foreground">
-                  Portable AI Memory Hub (Console)
-                </h1>
-                <p className="mt-2 max-w-3xl text-base leading-6 text-muted-foreground">
-                  Current project store, filtered to the active memory signals a LLM would use.
-                </p>
-              </div>
-              <Hint label="Create a new durable project memory (.ai-memory). Use the Type field to pick decision / knowledge / rule / preference / etc.">
-                <Button
-                  className="max-md:w-full"
-                  onClick={() => {
-                    setSelected(null)
-                    setSelectedId(null)
-                    setIsCreating(true)
-                    changeWorkspaceView('evidence')
-                  }}
-                >
-                  <Plus />
-                  New memory
-                </Button>
-              </Hint>
-            </header>
+            <ConsoleHeader
+              onCreateMemory={() => {
+                setSelected(null)
+                setSelectedId(null)
+                setIsCreating(true)
+                changeWorkspaceView('evidence')
+              }}
+            />
 
             {message ? (
               <StatusMessage onClose={() => setMessage('')}>{message}</StatusMessage>
@@ -744,56 +723,45 @@ function App() {
               statsResponse={statsResponse}
             />
 
-            {workspaceView === 'map' ? (
-              <div className="grid gap-4">
-                <NeuralMapPanel
-                  conceptDepth={conceptDepth}
-                  conceptGraph={conceptGraph}
-                  focusedConcept={focusedConcept}
-                  mapLayout={mapLayout}
-                  onClearFocus={clearFocus}
-                  onConceptDepthChange={setConceptDepth}
-                  onConceptSelect={focusConcept}
-                  onIgnore={ignoreConcept}
-                  onMapLayoutChange={setMapLayout}
-                />
-                <section className="grid grid-cols-[minmax(20rem,0.78fr)_minmax(24rem,1fr)] gap-4 max-xl:grid-cols-1">
-                  <ConceptInspector
-                    concept={activeConcept}
-                    conceptGraph={conceptGraph}
-                    focusedConcept={focusedConcept}
-                    onConceptSelect={focusConcept}
-                    onConsolidate={consolidateConcept}
-                    onIgnore={ignoreConcept}
-                  />
-                  <ContextMiniPanel
-                    contextPreview={contextPreview}
-                    onOpen={() => changeWorkspaceView('context')}
-                  />
-                </section>
-              </div>
-            ) : null}
-
-            {workspaceView === 'evidence' ? (
-              <section>
-                <MemoryIndex
-                  activeConcept={activeConcept}
-                  focusedConcept={focusedConcept}
-                  memories={memories}
-                  onClearFocus={clearFocus}
-                  onQueryChange={(value) => {
-                    setFocusedConcept('')
-                    setQuery(value)
-                  }}
-                  onSelect={selectMemory}
-                  onStatusChange={setStatus}
-                  query={focusedConcept || query}
-                  selectedId={selectedId}
-                  status={status}
-                  totalMatching={memoryTotal}
-                />
-              </section>
-            ) : null}
+            <PageRouter
+              activeConcept={activeConcept}
+              conceptDepth={conceptDepth}
+              conceptGraph={conceptGraph}
+              contextPreview={contextPreview}
+              directory={memoryDirectory}
+              focusedConcept={focusedConcept}
+              includeNoise={includeNoise}
+              knowledgeGraph={knowledgeGraph}
+              mapLayout={mapLayout}
+              memories={memories}
+              recommendations={recommendations}
+              selectedId={selectedId}
+              statsResponse={statsResponse}
+              status={status}
+              totalMatching={memoryTotal}
+              view={workspaceView}
+              query={focusedConcept || query}
+              onClearFocus={clearFocus}
+              onConceptDepthChange={setConceptDepth}
+              onConceptSelect={focusConcept}
+              onEvidenceOpen={(id) => {
+                changeWorkspaceView('evidence')
+                void selectMemory(id)
+              }}
+              onGoToPage={changeWorkspaceView}
+              onIgnoreConcept={ignoreConcept}
+              onIncludeNoiseChange={setIncludeNoise}
+              onMapLayoutChange={setMapLayout}
+              onPreferContradiction={preferContradiction}
+              onQueryChange={(value) => {
+                setFocusedConcept('')
+                setQuery(value)
+              }}
+              onRecommendationAction={handleRecommendation}
+              onSelectMemory={selectMemory}
+              onStatusChange={setStatus}
+              onConsolidateConcept={consolidateConcept}
+            />
 
             <MemoryModal
               eyebrow={selected ? selected.metadata.id : isCreating ? 'Create' : 'Evidence'}
@@ -818,42 +786,6 @@ function App() {
                 <CreateForm onCreate={createFromForm} />
               ) : null}
             </MemoryModal>
-
-            {workspaceView === 'context' ? (
-              <ContextPreviewPanel
-                contextPreview={contextPreview}
-                focusedConcept={focusedConcept}
-                onEvidence={() => changeWorkspaceView('evidence')}
-              />
-            ) : null}
-
-            {workspaceView === 'knowledge' ? (
-              <KnowledgeGraphPanel
-                directory={memoryDirectory}
-                graph={knowledgeGraph}
-                onEvidence={(id) => {
-                  changeWorkspaceView('evidence')
-                  void selectMemory(id)
-                }}
-              />
-            ) : null}
-
-            {workspaceView === 'governance' ? (
-              <GovernancePanel
-                conceptGraph={conceptGraph}
-                directory={memoryDirectory}
-                includeNoise={includeNoise}
-                onEvidenceSelect={(id) => {
-                  changeWorkspaceView('evidence')
-                  void selectMemory(id)
-                }}
-                onIncludeNoiseChange={setIncludeNoise}
-                onPreferContradiction={preferContradiction}
-                onRecommendationAction={handleRecommendation}
-                recommendations={recommendations}
-                statsResponse={statsResponse}
-              />
-            ) : null}
           </main>
         </div>
       </div>
@@ -861,110 +793,304 @@ function App() {
   )
 }
 
-function Sidebar({
-  onReset,
-  onViewChange,
-  stats,
+function PageRouter({
+  activeConcept,
+  conceptDepth,
+  conceptGraph,
+  contextPreview,
+  directory,
+  focusedConcept,
+  includeNoise,
+  knowledgeGraph,
+  mapLayout,
+  memories,
+  onClearFocus,
+  onConceptDepthChange,
+  onConceptSelect,
+  onConsolidateConcept,
+  onEvidenceOpen,
+  onGoToPage,
+  onIgnoreConcept,
+  onIncludeNoiseChange,
+  onMapLayoutChange,
+  onPreferContradiction,
+  onQueryChange,
+  onRecommendationAction,
+  onSelectMemory,
+  onStatusChange,
+  query,
+  recommendations,
+  selectedId,
+  statsResponse,
+  status,
+  totalMatching,
   view,
 }: {
-  onReset: () => void
-  onViewChange: (view: WorkspaceView) => void
-  stats: Stats | null
+  activeConcept: ApiConceptNode | null
+  conceptDepth: ConceptDepth
+  conceptGraph: ApiConceptGraph | null
+  contextPreview: ContextPreview | null
+  directory: Map<string, Memory | SearchResult>
+  focusedConcept: string
+  includeNoise: boolean
+  knowledgeGraph: KnowledgeGraphResponse | null
+  mapLayout: MapLayout
+  memories: Array<Memory | SearchResult>
+  onClearFocus: () => void
+  onConceptDepthChange: (depth: ConceptDepth) => void
+  onConceptSelect: (concept: string) => void
+  onConsolidateConcept: (concept: string) => void
+  onEvidenceOpen: (id: string) => void
+  onGoToPage: (view: WorkspaceView) => void
+  onIgnoreConcept: (concept: string) => void
+  onIncludeNoiseChange: (includeNoise: boolean) => void
+  onMapLayoutChange: (layout: MapLayout) => void
+  onPreferContradiction: (id: string, preferredId: string) => void
+  onQueryChange: (query: string) => void
+  onRecommendationAction: (id: string, action: 'apply' | 'reject' | 'defer') => void
+  onSelectMemory: (id: string) => void
+  onStatusChange: (status: string) => void
+  query: string
+  recommendations: RecommendationsResponse | null
+  selectedId: string | null
+  statsResponse: StatsResponse | null
+  status: string
+  totalMatching: number
   view: WorkspaceView
 }) {
+  if (view === 'map') {
+    return (
+      <ConceptsPage
+        activeConcept={activeConcept}
+        conceptDepth={conceptDepth}
+        conceptGraph={conceptGraph}
+        contextPreview={contextPreview}
+        focusedConcept={focusedConcept}
+        mapLayout={mapLayout}
+        onClearFocus={onClearFocus}
+        onConceptDepthChange={onConceptDepthChange}
+        onConceptSelect={onConceptSelect}
+        onConsolidate={onConsolidateConcept}
+        onContextOpen={() => onGoToPage('context')}
+        onIgnore={onIgnoreConcept}
+        onMapLayoutChange={onMapLayoutChange}
+      />
+    )
+  }
+
+  if (view === 'evidence') {
+    return (
+      <EvidencePage
+        activeConcept={activeConcept}
+        focusedConcept={focusedConcept}
+        memories={memories}
+        onClearFocus={onClearFocus}
+        onQueryChange={onQueryChange}
+        onSelect={onSelectMemory}
+        onStatusChange={onStatusChange}
+        query={query}
+        selectedId={selectedId}
+        status={status}
+        totalMatching={totalMatching}
+      />
+    )
+  }
+
+  if (view === 'context') {
+    return (
+      <ContextPage
+        contextPreview={contextPreview}
+        focusedConcept={focusedConcept}
+        onEvidence={() => onGoToPage('evidence')}
+      />
+    )
+  }
+
+  if (view === 'knowledge') {
+    return (
+      <KnowledgePage directory={directory} graph={knowledgeGraph} onEvidence={onEvidenceOpen} />
+    )
+  }
+
   return (
-    <aside className="sticky top-3 flex h-[calc(100vh-1.5rem)] flex-col gap-4 rounded-md bg-sidebar p-4 shadow-sm max-lg:static max-lg:h-auto">
-      <div className="flex items-center gap-3">
-        <div className="grid size-10 place-items-center rounded-md bg-primary text-sm font-black text-primary-foreground">
-          MH
-        </div>
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">PAMH</p>
-          <h2 className="text-lg font-semibold text-foreground">Project Memory</h2>
-        </div>
-      </div>
+    <GovernancePage
+      conceptGraph={conceptGraph}
+      directory={directory}
+      includeNoise={includeNoise}
+      onEvidenceSelect={onEvidenceOpen}
+      onIncludeNoiseChange={onIncludeNoiseChange}
+      onPreferContradiction={onPreferContradiction}
+      onRecommendationAction={onRecommendationAction}
+      recommendations={recommendations}
+      statsResponse={statsResponse}
+    />
+  )
+}
 
-      <nav className="grid gap-1 text-sm">
-        {navItems.map(({ icon: NavIcon, label, view: itemView }) => (
-          <Hint key={itemView} side="right" label={navHints[itemView]}>
-            <button
-              className={cn(
-                'flex h-9 items-center gap-2 rounded-sm px-3 text-left text-muted-foreground transition hover:bg-muted/50 hover:text-foreground',
-                view === itemView && 'bg-primary/10 text-primary'
-              )}
-              type="button"
-              onClick={() => onViewChange(itemView)}
-            >
-              <NavIcon className="size-4" />
-              {label}
-            </button>
-          </Hint>
-        ))}
-      </nav>
+function ConceptsPage({
+  activeConcept,
+  conceptDepth,
+  conceptGraph,
+  contextPreview,
+  focusedConcept,
+  mapLayout,
+  onClearFocus,
+  onConceptDepthChange,
+  onConceptSelect,
+  onConsolidate,
+  onContextOpen,
+  onIgnore,
+  onMapLayoutChange,
+}: {
+  activeConcept: ApiConceptNode | null
+  conceptDepth: ConceptDepth
+  conceptGraph: ApiConceptGraph | null
+  contextPreview: ContextPreview | null
+  focusedConcept: string
+  mapLayout: MapLayout
+  onClearFocus: () => void
+  onConceptDepthChange: (depth: ConceptDepth) => void
+  onConceptSelect: (concept: string) => void
+  onConsolidate: (concept: string) => void
+  onContextOpen: () => void
+  onIgnore: (concept: string) => void
+  onMapLayoutChange: (layout: MapLayout) => void
+}) {
+  return (
+    <div className="grid gap-4">
+      <NeuralMapPanel
+        conceptDepth={conceptDepth}
+        conceptGraph={conceptGraph}
+        focusedConcept={focusedConcept}
+        mapLayout={mapLayout}
+        onClearFocus={onClearFocus}
+        onConceptDepthChange={onConceptDepthChange}
+        onConceptSelect={onConceptSelect}
+        onIgnore={onIgnore}
+        onMapLayoutChange={onMapLayoutChange}
+      />
+      <section className="grid grid-cols-[minmax(20rem,0.78fr)_minmax(24rem,1fr)] gap-4 max-xl:grid-cols-1">
+        <ConceptInspector
+          concept={activeConcept}
+          conceptGraph={conceptGraph}
+          focusedConcept={focusedConcept}
+          onConceptSelect={onConceptSelect}
+          onConsolidate={onConsolidate}
+          onIgnore={onIgnore}
+        />
+        <ContextMiniPanel contextPreview={contextPreview} onOpen={onContextOpen} />
+      </section>
+    </div>
+  )
+}
 
-      <Separator className="bg-muted" />
+function EvidencePage({
+  activeConcept,
+  focusedConcept,
+  memories,
+  onClearFocus,
+  onQueryChange,
+  onSelect,
+  onStatusChange,
+  query,
+  selectedId,
+  status,
+  totalMatching,
+}: {
+  activeConcept: ApiConceptNode | null
+  focusedConcept: string
+  memories: Array<Memory | SearchResult>
+  onClearFocus: () => void
+  onQueryChange: (query: string) => void
+  onSelect: (id: string) => void
+  onStatusChange: (status: string) => void
+  query: string
+  selectedId: string | null
+  status: string
+  totalMatching: number
+}) {
+  return (
+    <section>
+      <MemoryIndex
+        activeConcept={activeConcept}
+        focusedConcept={focusedConcept}
+        memories={memories}
+        onClearFocus={onClearFocus}
+        onQueryChange={onQueryChange}
+        onSelect={onSelect}
+        onStatusChange={onStatusChange}
+        query={query}
+        selectedId={selectedId}
+        status={status}
+        totalMatching={totalMatching}
+      />
+    </section>
+  )
+}
 
-      <div className="grid gap-2">
-        <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-          Project store
-        </p>
-        <Hint
-          side="right"
-          label="Project memory directory (.ai-memory). PAMH uses one project store for this map."
-        >
-          <div className="rounded-md bg-primary/8 p-3">
-            <div className="flex items-center gap-2 text-sm font-medium text-primary">
-              <Database className="size-4" />
-              .ai-memory
-            </div>
-            <p className="mt-2 text-sm leading-5 text-muted-foreground">
-              Project-local memory only. This map uses one project store.
-            </p>
-          </div>
-        </Hint>
-      </div>
+function ContextPage({
+  contextPreview,
+  focusedConcept,
+  onEvidence,
+}: {
+  contextPreview: ContextPreview | null
+  focusedConcept: string
+  onEvidence: () => void
+}) {
+  return (
+    <ContextPreviewPanel
+      contextPreview={contextPreview}
+      focusedConcept={focusedConcept}
+      onEvidence={onEvidence}
+    />
+  )
+}
 
-      <div className="grid gap-2">
-        <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-          Status
-        </p>
-        {[
-          ['active', 'Active', stats?.active ?? 0],
-          ['proposed', 'Proposed', stats?.proposed ?? 0],
-          ['archived', 'Archived', stats?.archived ?? 0],
-          ['noise', 'Noise', stats?.noise ?? 0],
-          ['deleted', 'Deleted', stats?.deleted ?? 0],
-        ].map(([statusKey, label, value]) => (
-          <Hint key={String(label)} side="right" label={statusHints[String(label)]}>
-            <div className="flex items-center justify-between rounded-md bg-muted/35 px-3 py-2 text-sm">
-              <span className="text-muted-foreground">{label}</span>
-              <StatusCount status={String(statusKey)} value={Number(value)} />
-            </div>
-          </Hint>
-        ))}
-      </div>
+function KnowledgePage({
+  directory,
+  graph,
+  onEvidence,
+}: {
+  directory: Map<string, Memory | SearchResult>
+  graph: KnowledgeGraphResponse | null
+  onEvidence: (id: string) => void
+}) {
+  return <KnowledgeGraphPanel directory={directory} graph={graph} onEvidence={onEvidence} />
+}
 
-      <div className="mt-auto rounded-mda bg-muted/35 px-3 py-2 text-sm text-muted-foreground">
-        Project-local memory only.
-      </div>
-
-      <Hint
-        side="right"
-        label="DEBUG — Deletes the entire .ai-memory directory of the current project. Irreversible. To be removed before release."
-      >
-        <button
-          className="flex items-center justify-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive transition hover:bg-destructive/20"
-          type="button"
-          onClick={onReset}
-        >
-          <Trash2 className="size-4" />
-          Reset project memory
-          <Badge className="ml-1 bg-destructive/20 text-destructive hover:bg-destructive/20">
-            debug
-          </Badge>
-        </button>
-      </Hint>
-    </aside>
+function GovernancePage({
+  conceptGraph,
+  directory,
+  includeNoise,
+  onEvidenceSelect,
+  onIncludeNoiseChange,
+  onPreferContradiction,
+  onRecommendationAction,
+  recommendations,
+  statsResponse,
+}: {
+  conceptGraph: ApiConceptGraph | null
+  directory: Map<string, Memory | SearchResult>
+  includeNoise: boolean
+  onEvidenceSelect: (id: string) => void
+  onIncludeNoiseChange: (includeNoise: boolean) => void
+  onPreferContradiction: (id: string, preferredId: string) => void
+  onRecommendationAction: (id: string, action: 'apply' | 'reject' | 'defer') => void
+  recommendations: RecommendationsResponse | null
+  statsResponse: StatsResponse | null
+}) {
+  return (
+    <GovernancePanel
+      conceptGraph={conceptGraph}
+      directory={directory}
+      includeNoise={includeNoise}
+      onEvidenceSelect={onEvidenceSelect}
+      onIncludeNoiseChange={onIncludeNoiseChange}
+      onPreferContradiction={onPreferContradiction}
+      onRecommendationAction={onRecommendationAction}
+      recommendations={recommendations}
+      statsResponse={statsResponse}
+    />
   )
 }
 
@@ -2531,40 +2657,6 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge className={cn('rounded-full border px-2', tone.badge)}>{status}</Badge>
 }
 
-function StatusCount({ status, value }: { status: string; value: number }) {
-  const tone = getStatusTone(status)
-  return (
-    <strong className={cn('rounded-full border px-2 py-0.5 text-xs tabular-nums', tone.badge)}>
-      {value}
-    </strong>
-  )
-}
-
-function getStatusTone(status: string): { badge: string } {
-  const tones: Record<string, { badge: string }> = {
-    active: {
-      badge: 'border-emerald-400/25 bg-emerald-400/12 text-emerald-200 hover:bg-emerald-400/12',
-    },
-    proposed: {
-      badge: 'border-sky-400/25 bg-sky-400/12 text-sky-200 hover:bg-sky-400/12',
-    },
-    archived: {
-      badge: 'border-zinc-400/25 bg-zinc-400/10 text-zinc-300 hover:bg-zinc-400/10',
-    },
-    noise: {
-      badge: 'border-amber-400/25 bg-amber-400/12 text-amber-200 hover:bg-amber-400/12',
-    },
-    deleted: {
-      badge: 'border-rose-400/25 bg-rose-400/12 text-rose-200 hover:bg-rose-400/12',
-    },
-  }
-  return (
-    tones[status] ?? {
-      badge: 'border-border bg-muted text-foreground hover:bg-muted',
-    }
-  )
-}
-
 function LegendDot({ className, label }: { className: string; label: string }) {
   return (
     <span className="inline-flex items-center text-sm gap-1.5">
@@ -3010,6 +3102,18 @@ function getActiveConcept(
   if (!conceptGraph) return null
   if (!focusedConcept) return null
   return conceptGraph.concepts.find((concept) => concept.searchTerm === focusedConcept) ?? null
+}
+
+function getInitialWorkspaceView(): WorkspaceView {
+  const route = window.location.hash.replace(/^#\/?/, '')
+  const knownViews = new Set<WorkspaceView>([
+    'map',
+    'evidence',
+    'context',
+    'governance',
+    'knowledge',
+  ])
+  return knownViews.has(route as WorkspaceView) ? (route as WorkspaceView) : 'map'
 }
 
 function pairKey(a: string, b: string): string {
