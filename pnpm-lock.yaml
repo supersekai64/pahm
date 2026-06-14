@@ -50,7 +50,7 @@ importers:
         specifier: ^15.0.0
         version: 15.0.0
       pamh-api:
-        specifier: ^0.1.7
+        specifier: ^0.1.8
         version: link:../api
       pamh-core:
         specifier: ^0.1.4

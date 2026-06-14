@@ -2,7 +2,6 @@ import { createReadStream, existsSync } from 'node:fs'
 import { readFile, rm, writeFile } from 'node:fs/promises'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { dirname, extname, join, normalize, resolve, sep } from 'node:path'
-import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import {
   MemoryIndex,
@@ -117,20 +116,20 @@ interface NoiseConfig {
 
 const DEFAULT_HOST = '127.0.0.1'
 const DEFAULT_PORT = 3939
-const require = createRequire(import.meta.url)
+const SERVER_DIST_DIR = dirname(fileURLToPath(import.meta.url))
 
 function resolveDefaultStaticDir(): string {
-  const localWorkspaceStaticDir = join(
-    dirname(fileURLToPath(import.meta.url)),
-    '../../ui/dist/public'
-  )
-  if (existsSync(localWorkspaceStaticDir)) return localWorkspaceStaticDir
+  const candidates = [
+    join(SERVER_DIST_DIR, '../../ui/dist/public'),
+    join(SERVER_DIST_DIR, '../../pamh-ui/dist/public'),
+    join(SERVER_DIST_DIR, '../node_modules/pamh-ui/dist/public'),
+  ]
 
-  try {
-    return join(dirname(require.resolve('pamh-ui')), 'public')
-  } catch {
-    return localWorkspaceStaticDir
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate
   }
+
+  return candidates[0]
 }
 
 const DEFAULT_STATIC_DIR = resolveDefaultStaticDir()
